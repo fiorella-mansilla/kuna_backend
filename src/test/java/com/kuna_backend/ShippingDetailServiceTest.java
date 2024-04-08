@@ -1,15 +1,16 @@
 package com.kuna_backend;
 
+import com.kuna_backend.builders.ShippingTestDataBuilder;
 import com.kuna_backend.dtos.shipping.ShippingDetailDto;
 import com.kuna_backend.models.Client;
 import com.kuna_backend.models.ShippingDetail;
 import com.kuna_backend.repositories.ShippingDetailRepository;
 import com.kuna_backend.services.ShippingDetailService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,10 +18,12 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 public class ShippingDetailServiceTest {
     @Mock
     private ShippingDetailRepository shippingDetailRepository;
@@ -31,20 +34,12 @@ public class ShippingDetailServiceTest {
     @InjectMocks
     private ShippingDetailService shippingDetailService;
 
-    @BeforeEach
-    public void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
-
     @Test
-    public void updateShippingDetailForExistingShippingDetail() {
-
-        Client client = new Client();
-        client.setShippingDetail(existingShippingDetail);
+    public void updateShippingDetail_ForExistingShippingDetailOfClient_ShouldUpdateExistingDetails() {
 
         Long id = 1L;
-        ShippingDetailDto shippingDetailDto = new ShippingDetailDto("John Doe","123 Main St","Lima",
-                "12345","Peru","456-7890");
+        Client client = ShippingTestDataBuilder.createClientWithShippingDetail(existingShippingDetail);
+        ShippingDetailDto shippingDetailDto = ShippingTestDataBuilder.createShippingDetailDto();
 
         when(client.getShippingDetail().getId()).thenReturn(id);
         when(shippingDetailRepository.findById(id)).thenReturn(java.util.Optional.of(existingShippingDetail));
@@ -59,61 +54,53 @@ public class ShippingDetailServiceTest {
         verify(existingShippingDetail).setCountry(shippingDetailDto.getCountry());
         verify(existingShippingDetail).setPhone(shippingDetailDto.getPhone());
     }
+
     @Test
-    public void addShippingDetailForNewShippingDetail() {
+    public void addShippingDetail_ForNonExistingShippingDetailOfClient_ShouldSaveNewDetails() {
 
-        Client client = new Client();
-        client.setShippingDetail(existingShippingDetail);
-
-        Long id = 1L;
-        ShippingDetailDto shippingDetailDto = new ShippingDetailDto("John Doe","123 Main St","Lima",
-                "12345","Peru","456-7890");
-
-        when(client.getShippingDetail().getId()).thenReturn(id);
-        when(shippingDetailRepository.findById(id)).thenReturn(java.util.Optional.of(existingShippingDetail));
+        Client client = ShippingTestDataBuilder.createClientWithShippingDetail(null);
+        ShippingDetailDto shippingDetailDto = ShippingTestDataBuilder.createShippingDetailDto();
 
         shippingDetailService.addShippingDetail(shippingDetailDto, client);
 
-        verify(shippingDetailRepository, times(1)).save(any());
+        verify(shippingDetailRepository, times(1)).save(any(ShippingDetail.class));
     }
-
 
     @Test
     public void getAllShippingDetails() {
 
-        List<ShippingDetail> shippingDetails = new ArrayList<>();
-        when(shippingDetailRepository.findAll()).thenReturn(shippingDetails);
+        List<ShippingDetail> expectedShippingDetail = new ArrayList<>();
+        when(shippingDetailRepository.findAll()).thenReturn(expectedShippingDetail);
 
-        List<ShippingDetail> result = shippingDetailService.getAllShippingDetails();
+        List<ShippingDetail> shippingDetail = shippingDetailService.getAllShippingDetails();
 
         verify(shippingDetailRepository).findAll();
-
-        assertEquals(shippingDetails, result);
+        assertEquals(expectedShippingDetail, shippingDetail);
     }
 
     @Test
-    public void getShippingDetailWithValidId() {
+    public void getShippingDetail_WithValidId_ShouldReturnShippingDetail() {
 
-        ShippingDetail shippingDetail = new ShippingDetail();
-        Long shippingDetailId = 1L;
+        Client client = ShippingTestDataBuilder.createClientWithShippingDetail(new ShippingDetail());
+        when(shippingDetailRepository.findById(client.getShippingDetail().getId())).thenReturn(Optional.of(client.getShippingDetail()));
 
-        Client client = new Client();
-        client.setShippingDetail(shippingDetail);
+        Optional<ShippingDetail> shippingDetail = shippingDetailService.getShippingDetail(client);
 
-        when(shippingDetailRepository.findById(client.getShippingDetail().getId())).thenReturn(Optional.of(shippingDetail));
+        verify(shippingDetailRepository).findById(client.getShippingDetail().getId());
+        assertEquals(client.getShippingDetail(), shippingDetail.orElse(null));
+    }
+
+    @Test
+    public void getShippingDetail_WithInvalidId_ShouldReturnEmptyOptional() {
+
+        Long invalidId = 99L;
+        Client client = ShippingTestDataBuilder.createClientWithShippingDetail(null);
+        client.setId(invalidId);
 
         Optional<ShippingDetail> result = shippingDetailService.getShippingDetail(client);
 
-        verify(shippingDetailRepository).findById(client.getShippingDetail().getId());
-        assertEquals(shippingDetailRepository.findById(client.getShippingDetail().getId()), result);
-    }
-
-    @Test
-    public void getShippingDetailWithInvalidId() {
-
-        Long invalidId = 999L;
-
-        when(shippingDetailRepository.findById(invalidId)).thenReturn(Optional.empty());
+        assertEquals(Optional.empty(), result);
+        verify(shippingDetailRepository, never()).findById(invalidId);
     }
 
 }

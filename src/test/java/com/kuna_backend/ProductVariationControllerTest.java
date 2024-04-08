@@ -1,5 +1,6 @@
 package com.kuna_backend;
 
+import com.kuna_backend.builders.ProductVariationTestDataBuilder;
 import com.kuna_backend.common.ApiResponse;
 import com.kuna_backend.controllers.ProductVariationController;
 import com.kuna_backend.dtos.product.ProductVariationDto;
@@ -31,10 +32,10 @@ public class ProductVariationControllerTest {
     private ProductVariationController productVariationController;
 
     @Test
-    public void getProductVariationById() {
+    public void getProductVariationById_ShouldReturnProductVariation() {
 
         Long productVariationId = 1L;
-        ProductVariation productVariation = new ProductVariation();
+        ProductVariation productVariation = ProductVariationTestDataBuilder.createProductVariation();
         when(productVariationService.getProductVariationById(productVariationId)).thenReturn(productVariation);
 
         ResponseEntity<ProductVariation> response = productVariationController.getProductVariationById(productVariationId);
@@ -44,29 +45,25 @@ public class ProductVariationControllerTest {
     }
 
     @Test
-    public void updateProductVariationShouldReturnSuccessResponse() {
+    public void updateProductVariation_WhenDtoNotNull_ShouldReturnSuccessResponse() {
 
         Long productVariationId = 1L;
         ProductVariationDto updatedVariationDto = new ProductVariationDto();
-
-        ProductVariation productVariation = new ProductVariation();
-
+        ProductVariation productVariation = ProductVariationTestDataBuilder.createProductVariation();
         when(productVariationService.updateProductVariation(productVariationId, updatedVariationDto)).thenReturn(productVariation);
 
         ResponseEntity<ApiResponse> responseEntity = productVariationController.updateProductVariation(productVariationId, updatedVariationDto);
 
         assertEquals(HttpStatus.OK, responseEntity.getStatusCode());
         assertEquals(new ApiResponse(true, "Product Variation updated successfully"), responseEntity.getBody());
-
         verify(productVariationService, times(1)).updateProductVariation(eq(productVariationId), eq(updatedVariationDto));
     }
 
     @Test
-    public void updateProductVariationShouldReturnBadRequestResponse() {
+    public void updateProductVariation_WhenDtoNull_ShouldReturnBadRequestResponse() {
 
         Long productVariationId = 1L;
         ProductVariationDto updatedVariationDto = null;
-
         doThrow(new IllegalArgumentException("ProductVariationDto cannot be null for ID: " + productVariationId))
                 .when(productVariationService).updateProductVariation(eq(productVariationId), eq(updatedVariationDto));
 
@@ -74,42 +71,37 @@ public class ProductVariationControllerTest {
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
         assertEquals("ProductVariationDto cannot be null for ID: " + productVariationId, response.getBody().getMessage());
-
         verify(productVariationService, times(1)).updateProductVariation(eq(productVariationId), eq(updatedVariationDto));
     }
 
     @Test
-    public void deleteProductVariationByValidId() {
+    public void deleteProductVariationById_WhenExists_ShouldReturnSuccessResponse() {
 
         Long productVariationId = 1L;
-
         when(productVariationService.deleteProductVariation(productVariationId)).thenReturn(true);
 
         ResponseEntity<ApiResponse> response = productVariationController.deleteProductVariationById(productVariationId);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertEquals(new ApiResponse(true, "The Product Variation has been successfully deleted"), response.getBody());
-
         verify(productVariationService, times(1)).deleteProductVariation(eq(productVariationId));
     }
 
     @Test
-    public void deleteProductVariationByIdShouldReturnNotFoundResponse() {
+    public void deleteProductVariationById_WhenNotExists_ShouldReturnNotFoundResponse() {
 
         Long productVariationId = 20L;
-
         when(productVariationService.deleteProductVariation(productVariationId)).thenReturn(false);
 
         ResponseEntity<ApiResponse> response = productVariationController.deleteProductVariationById(productVariationId);
 
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
         assertEquals(new ApiResponse(false, "Product Variation not found"), response.getBody());
-
         verify(productVariationService, times(1)).deleteProductVariation(eq(productVariationId));
     }
 
     @Test
-    public void deleteProductVariationByInvalidId() {
+    public void deleteProductVariationById_WhenInvalidId_ShouldReturnBadRequestResponse() {
 
         Long productVariationId = -40L;
 
@@ -120,5 +112,4 @@ public class ProductVariationControllerTest {
 
         verify(productVariationService, never()).deleteProductVariation(anyLong());
     }
-
 }

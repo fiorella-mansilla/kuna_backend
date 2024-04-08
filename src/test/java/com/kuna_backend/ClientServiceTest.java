@@ -1,5 +1,6 @@
 package com.kuna_backend;
 
+import com.kuna_backend.builders.ClientTestDataBuilder;
 import com.kuna_backend.dtos.ResponseDto;
 import com.kuna_backend.dtos.client.SignInDto;
 import com.kuna_backend.dtos.client.SignInResponseDto;
@@ -12,12 +13,10 @@ import com.kuna_backend.repositories.ClientRepository;
 import com.kuna_backend.services.AuthenticationService;
 import com.kuna_backend.services.ClientService;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -51,15 +50,10 @@ public class ClientServiceTest {
     private final String testEmail = "john@example.com";
     private final String testPassword = "password";
 
-    @BeforeEach
-    public void setUp() {
-        Mockito.reset(clientRepository, authenticationService, passwordEncoder);
-    }
-
     @Test
-    public void signUpWithNonExistingEmail() throws CustomException {
+    public void signUp_WithNonExistingEmail_ShouldCreateNewClient() throws CustomException {
 
-        SignupDto signupDto = new SignupDto("John", "Doe", testEmail, testPassword);
+        SignupDto signupDto = ClientTestDataBuilder.createSignupDto();
         when(clientRepository.findByEmail(signupDto.getEmail())).thenReturn(null);
         when(clientRepository.save(any(Client.class))).thenReturn(new Client());
         doNothing().when(authenticationService).saveConfirmationToken(any(AuthenticationToken.class));
@@ -75,11 +69,11 @@ public class ClientServiceTest {
     }
 
     @Test
-    public void signUpWithExistingEmail() {
+    public void signUp_WithExistingEmail_ShouldThrowCustomException() {
 
-        Client existingClient = new Client("John", "Doe", testEmail, testPassword);
+        Client existingClient = ClientTestDataBuilder.createClient();
         when(clientRepository.findByEmail(testEmail)).thenReturn(existingClient);
-        SignupDto signupDto = new SignupDto("John", "Doe", testEmail, testPassword);
+        SignupDto signupDto = ClientTestDataBuilder.createSignupDto();
 
         assertThrows(CustomException.class, () -> clientService.signUp(signupDto));
         verify(clientRepository).findByEmail(testEmail);
@@ -87,9 +81,9 @@ public class ClientServiceTest {
     }
 
     @Test
-    public void signUpWithExceptionOnSave() {
+    public void signUp_WithExceptionOnSave_ShouldThrowCustomException() {
 
-        SignupDto signupDto = new SignupDto("John", "Doe", testEmail, testPassword);
+        SignupDto signupDto = ClientTestDataBuilder.createSignupDto();
         when(clientRepository.findByEmail(signupDto.getEmail())).thenReturn(null);
         doThrow(new RuntimeException("Failed to save")).when(clientRepository).save(any(Client.class));
 
@@ -100,10 +94,9 @@ public class ClientServiceTest {
     }
 
     @Test
-    public void signInWithValidCredentials() {
+    public void signIn_WithValidCredentials_ShouldReturnToken() {
 
-        Client client = new Client();
-        client.setEmail(testEmail);
+        Client client = ClientTestDataBuilder.createClient();
         client.setPassword(passwordEncoder.encode(testPassword));
 
         SignInDto signInDto = new SignInDto();
@@ -127,7 +120,7 @@ public class ClientServiceTest {
     }
 
     @Test
-    public void signInWithInvalidEmail() {
+    public void signIn_WithInvalidEmail_ShouldThrowAuthenticationFailException() {
 
         SignInDto signInDto = new SignInDto("invalid_email@example.com", testPassword);
         when(clientRepository.findByEmail(signInDto.getEmail())).thenReturn(null);
@@ -137,10 +130,10 @@ public class ClientServiceTest {
     }
 
     @Test
-    public void signInWithInvalidPassword() {
+    public void signIn_WithInvalidPassword_ShouldThrowAuthenticationFailException() {
 
         SignInDto signInDto = new SignInDto(testEmail, "invalid_password");
-        Client mockClient = new Client();
+        Client mockClient = ClientTestDataBuilder.createClient();
         mockClient.setPassword("$2a$10$OrsbB5HilcA8TubrEm9nCOB9TQ/NPlUhCjSdcBxEnEX9TN1pL7ehG");
         when(clientRepository.findByEmail(signInDto.getEmail())).thenReturn(mockClient);
         when(passwordEncoder.matches(signInDto.getPassword(), mockClient.getPassword())).thenReturn(false);
@@ -152,7 +145,7 @@ public class ClientServiceTest {
     }
 
     @Test
-    public void hashPasswordWithValidPassword() {
+    public void hashPassword_WithValidPassword_ShouldReturnHashedPassword() {
 
         String hashedPassword = clientService.hashPassword(testPassword);
         PasswordEncoder passwordEncoder = PasswordEncoderFactories.createDelegatingPasswordEncoder();
@@ -162,7 +155,7 @@ public class ClientServiceTest {
     }
 
     @Test
-    public void hashPasswordWithBlankPassword() {
+    public void hashPassword_WithBlankPassword_ShouldThrowIllegalArgumentException() {
 
         String blank_password = "";
 
@@ -182,10 +175,10 @@ public class ClientServiceTest {
     }
 
     @Test
-    public void getClientWithValidId() {
+    public void getClient_WithValidId_ShouldReturnClient() {
 
         Long clientId = 1L;
-        Client client = new Client();
+        Client client = ClientTestDataBuilder.createClient();
         when(clientRepository.findById(clientId)).thenReturn(Optional.of(client));
 
         Client result = clientService.getClient(clientId);
@@ -196,7 +189,7 @@ public class ClientServiceTest {
     }
 
     @Test
-    public void getClientWithInvalidId() {
+    public void getClient_WithInvalidId_ShouldThrowNoSuchElementException() {
 
         Long clientId = 1L;
         when(clientRepository.findById(clientId)).thenReturn(Optional.empty());
@@ -206,7 +199,7 @@ public class ClientServiceTest {
     }
 
     @Test
-    public void deleteClientWithValidId() {
+    public void deleteClient_WithValidId_ShouldDeleteClient() {
 
         Long clientId = 1L;
 

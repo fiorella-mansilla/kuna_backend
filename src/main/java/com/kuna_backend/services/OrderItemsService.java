@@ -10,8 +10,12 @@ import org.springframework.stereotype.Service;
 @Transactional
 public class OrderItemsService {
 
+    private final OrderItemsRepository orderItemsRepository;
+
     @Autowired
-    private OrderItemsRepository orderItemsRepository;
+    public OrderItemsService(OrderItemsRepository orderItemsRepository) {
+        this.orderItemsRepository = orderItemsRepository;
+    }
 
     public void addOrderedItems (OrderItem orderItem) {
         orderItemsRepository.save(orderItem);

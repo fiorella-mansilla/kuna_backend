@@ -23,8 +23,10 @@ import java.util.Optional;
 @Service
 @Transactional
 public class ProductService {
+
     @Autowired
     private ProductRepository productRepository;
+
     @Autowired
     private ProductVariationRepository productVariationRepository;
 

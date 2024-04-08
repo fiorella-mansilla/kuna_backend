@@ -19,14 +19,14 @@ import java.util.List;
 @Transactional
 public class CartService  {
 
-    @Autowired
     private CartRepository cartRepository;
 
-    public CartService() {
-    }
-
+    @Autowired
     public CartService(CartRepository cartRepository) {
         this.cartRepository = cartRepository;
+    }
+
+    public CartService() {
     }
 
     public void addToCart (AddToCartDto addToCartDto, ProductVariation productVariation, Client client) {

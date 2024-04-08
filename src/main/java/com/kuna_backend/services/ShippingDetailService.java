@@ -13,8 +13,12 @@ import java.util.Optional;
 @Service
 public class ShippingDetailService {
 
+    private final ShippingDetailRepository shippingDetailRepository;
+
     @Autowired
-    private ShippingDetailRepository shippingDetailRepository;
+    public ShippingDetailService(ShippingDetailRepository shippingDetailRepository) {
+        this.shippingDetailRepository = shippingDetailRepository;
+    }
 
     public ShippingDetail addShippingDetail(ShippingDetailDto shippingDetailDto, Client client) {
 

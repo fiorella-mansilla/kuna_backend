@@ -16,12 +16,10 @@ import com.kuna_backend.repositories.ProductVariationRepository;
 import com.kuna_backend.services.CartService;
 import com.kuna_backend.services.OrderService;
 import com.kuna_backend.services.ShippingDetailService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
@@ -58,13 +56,9 @@ public class OrderServiceTest {
     @InjectMocks
     private OrderService orderService;
 
-    @BeforeEach
-    public void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
 
     @Test
-    public void placeOrderShouldCreateNewOrder() {
+    public void placeOrder_ShouldCreateNewOrder() {
 
         Client client = new Client();
         Payment payment = new Payment();
@@ -74,20 +68,17 @@ public class OrderServiceTest {
         CartDto cartDto = OrderTestDataBuilder.buildCartDto(cartItemDtoList, 100.0);
 
         when(cartService.listCartItems(client)).thenReturn(cartDto);
+        when(shippingDetailService.getShippingDetail(client)).thenReturn(Optional.of(shippingDetail));
         when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> {
             Order order = invocation.getArgument(0);
             if (order.getId() == null) {
-                // Set the ID manually if it's not set (first invocation)
-                order.setId(1L);
+                order.setId(1L); // Set the ID manually if it's not set (first invocation)
             }
             return order;
         });
 
-        when(shippingDetailService.getShippingDetail(client)).thenReturn(Optional.of(shippingDetail));
-
         orderService.placeOrder(client, payment, shippingDetail);
 
-        // Verify the order creation with correct details
         verify(orderRepository, times(1)).save(argThat(order -> {
             assertNotNull(order.getCreatedAt());
             assertEquals(client, order.getClient());
@@ -100,7 +91,7 @@ public class OrderServiceTest {
     }
 
     @Test
-    public void placeOrderShouldCreateOrderItemsForCartItems() {
+    public void placeOrder_ShouldCreateOrderItemsForCartItems() {
 
         Client client = new Client();
         Payment payment = new Payment();
@@ -109,14 +100,12 @@ public class OrderServiceTest {
         List<CartItemDto> cartItemDtoList = OrderTestDataBuilder.buildCartItemDtoList();
         CartDto cartDto = OrderTestDataBuilder.buildCartDto(cartItemDtoList, 100.0);
 
-
         when(cartService.listCartItems(client)).thenReturn(cartDto);
         when(orderRepository.save(any(Order.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(orderItemsRepository.save(any(OrderItem.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         orderService.placeOrder(client, payment, shippingDetail);
 
-        // Verify the creation of order items for each cart item
         verify(orderItemsRepository, times(cartItemDtoList.size())).save(argThat(orderItem -> {
             assertNotNull(orderItem.getCreatedAt());
             assertNotNull(orderItem.getPrice());
@@ -128,7 +117,7 @@ public class OrderServiceTest {
     }
 
     @Test
-    public void placeOrderShouldDeleteCartItemsAfterOrderPlacement() {
+    public void placeOrder_WhenOrderIsPlaced_ShouldDeleteCartItems() {
 
         Client client = new Client();
         Payment payment = new Payment();
@@ -171,7 +160,7 @@ public class OrderServiceTest {
     }
 
     @Test
-    public void getOrderWithValidId() throws OrderNotFoundException {
+    public void getOrder_WithValidId_ShouldReturnOrder() throws OrderNotFoundException {
 
         Long orderId = 1L;
         Order expectedOrder = new Order();
@@ -184,7 +173,7 @@ public class OrderServiceTest {
     }
 
     @Test
-    public void getOrderWithInvalidId() throws OrderNotFoundException {
+    public void getOrder_WithInvalidId_ShouldThrowOrderNotFoundException() throws OrderNotFoundException {
 
         Long orderId = 1L;
 

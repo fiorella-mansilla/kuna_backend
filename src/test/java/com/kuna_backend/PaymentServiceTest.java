@@ -1,12 +1,11 @@
 package com.kuna_backend;
 
+import com.kuna_backend.builders.PaymentTestDataBuilder;
 import com.kuna_backend.dtos.checkout.CheckoutItemDto;
 import com.kuna_backend.enums.PaymentStatus;
 import com.kuna_backend.models.Cart;
 import com.kuna_backend.models.Client;
 import com.kuna_backend.models.Payment;
-import com.kuna_backend.models.Product;
-import com.kuna_backend.models.ProductVariation;
 import com.kuna_backend.repositories.CartRepository;
 import com.kuna_backend.repositories.PaymentRepository;
 import com.kuna_backend.services.PaymentService;
@@ -65,12 +64,9 @@ public class PaymentServiceTest {
     }
 
     @Test
-    void createPriceData() {
+    public void createPriceData() {
 
-        CheckoutItemDto checkoutItemDto = new CheckoutItemDto();
-        checkoutItemDto.setProductName("Product 1");
-        checkoutItemDto.setPrice(10.0);
-        checkoutItemDto.setQuantity(2);
+        CheckoutItemDto checkoutItemDto = PaymentTestDataBuilder.buildCheckoutItemDto();
 
         SessionCreateParams.LineItem.PriceData result = paymentService.createPriceData(checkoutItemDto);
 
@@ -80,12 +76,9 @@ public class PaymentServiceTest {
     }
 
     @Test
-    void createSessionLineItem() {
+    public void createSessionLineItem() {
 
-        CheckoutItemDto checkoutItemDto = new CheckoutItemDto();
-        checkoutItemDto.setProductName("Product 1");
-        checkoutItemDto.setPrice(10.0);
-        checkoutItemDto.setQuantity(2);
+        CheckoutItemDto checkoutItemDto = PaymentTestDataBuilder.buildCheckoutItemDto();
 
         SessionCreateParams.LineItem result = paymentService.createSessionLineItem(checkoutItemDto);
 
@@ -99,16 +92,14 @@ public class PaymentServiceTest {
 
         String successURL = paymentService.baseURL + "payment/success";
         String failureURL = paymentService.baseURL + "payment/failed";
-
         List<Cart> cartList = new ArrayList<>();
 
         when(cartRepository.findAllByClientOrderByCreatedAtDesc(client)).thenReturn(cartList);
 
         SessionCreateParams.Builder paramsBuilder = mock(SessionCreateParams.Builder.class);
         SessionCreateParams params = mock(SessionCreateParams.class);
-        Session session = mock(Session.class);
+        Session expectedSession = mock(Session.class);
 
-        // Mock the static methods
         try (MockedStatic<SessionCreateParams> sessionBuilderMock = mockStatic(SessionCreateParams.class);
              MockedStatic<Session> sessionMock = mockStatic(Session.class);
              MockedConstruction<SessionCreateParams.LineItem> lineItemConstruction = mockConstruction(SessionCreateParams.LineItem.class)) {
@@ -123,11 +114,11 @@ public class PaymentServiceTest {
             when(paramsBuilder.build()).thenReturn(params);
 
             // Stub the Session.create method
-            sessionMock.when(() -> Session.create(params)).thenReturn(session);
+            sessionMock.when(() -> Session.create(params)).thenReturn(expectedSession);
 
-            Session result = paymentService.createSession(client);
+            Session session = paymentService.createSession(client);
 
-            assertEquals(session, result);
+            assertEquals(expectedSession, session);
             verify(paramsBuilder).addPaymentMethodType(SessionCreateParams.PaymentMethodType.CARD);
             verify(paramsBuilder).setMode(SessionCreateParams.Mode.PAYMENT);
             verify(paramsBuilder).setCancelUrl(failureURL);
@@ -136,7 +127,6 @@ public class PaymentServiceTest {
             verify(paramsBuilder).build();
             verify(cartRepository).findAllByClientOrderByCreatedAtDesc(client);
 
-            // Verify the static method call
             sessionMock.verify(() -> Session.create(params));
         }
     }
@@ -144,25 +134,22 @@ public class PaymentServiceTest {
     @Test
     public void getDtoFromCart() {
 
-        Product product = new Product();
-        product.setName("Body");
-        product.setPrice(20.0);
-
-        ProductVariation productVariation = new ProductVariation();
-        productVariation.setId(1L);
-        productVariation.setProduct(product);
-
-        Cart cart = new Cart();
-        cart.setQuantity(4);
-        cart.setProductVariation(productVariation);
+        Cart cart = PaymentTestDataBuilder.buildCart();
+        String expectedProductName = cart.getProductVariation().getProduct().getName();
+        int expectedCartQuantity = cart.getQuantity();
+        double expectedProductPrice = cart.getProductVariation().getProduct().getPrice();
+        Long expectedId = cart.getProductVariation().getId();
 
         CheckoutItemDto checkoutItemDto = PaymentService.getDtoFromCart(cart);
+        String productName = checkoutItemDto.getProductName();
+        int cartQuantity = checkoutItemDto.getQuantity();
+        double productPrice = checkoutItemDto.getPrice();
+        Long id = checkoutItemDto.getProductVariationId();
 
-        assertEquals(cart.getProductVariation().getProduct().getName(), checkoutItemDto.getProductName());
-        assertEquals(cart.getQuantity(), checkoutItemDto.getQuantity());
-        assertEquals(cart.getProductVariation().getProduct().getPrice(), checkoutItemDto.getPrice());
-        assertEquals(cart.getProductVariation().getId(), checkoutItemDto.getProductVariationId());
-
+        assertEquals(expectedProductName, productName);
+        assertEquals(expectedCartQuantity, cartQuantity);
+        assertEquals(expectedProductPrice, productPrice);
+        assertEquals(expectedId, id);
     }
 
     @Test
@@ -183,7 +170,6 @@ public class PaymentServiceTest {
 
             paymentService.savePaymentFromSession(stripeToken, clientMock);
 
-            // Verify that the paymentRepository.save method was called with the expected Payment object
             verify(paymentRepository).save(argThat(payment ->
                     payment.getAmount() == 10.0f &&
                             payment.getCurrency().equals("USD") &&
@@ -198,12 +184,12 @@ public class PaymentServiceTest {
     @Test
     public void getAllPayments() {
 
-        List<Payment> paymentList = new ArrayList<>();
-        when(paymentRepository.findAll()).thenReturn(paymentList);
+        List<Payment> expectedPaymentList = new ArrayList<>();
+        when(paymentRepository.findAll()).thenReturn(expectedPaymentList);
 
-        List<Payment> result = paymentService.getAllPayments();
+        List<Payment> paymentList = paymentService.getAllPayments();
 
-        assertEquals(paymentList, result);
+        assertEquals(expectedPaymentList, paymentList);
         verify(paymentRepository).findAll();
     }
 
@@ -211,13 +197,13 @@ public class PaymentServiceTest {
     public void getPaymentById() {
 
         String stripeToken = "test_token";
-        Payment payment = new Payment();
-        when(paymentRepository.findPaymentByStripeToken(stripeToken)).thenReturn(payment);
+        Payment expectedPayment = new Payment();
+        when(paymentRepository.findPaymentByStripeToken(stripeToken)).thenReturn(expectedPayment);
 
-        Payment result = paymentService.getPaymentById(stripeToken);
+        Payment payment = paymentService.getPaymentById(stripeToken);
 
-        assertEquals(payment, result);
+        assertEquals(expectedPayment, payment);
         verify(paymentRepository).findPaymentByStripeToken(stripeToken);
-
     }
+
 }

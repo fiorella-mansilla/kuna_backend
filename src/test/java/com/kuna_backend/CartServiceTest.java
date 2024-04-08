@@ -1,25 +1,20 @@
 package com.kuna_backend;
 
+import com.kuna_backend.builders.CartTestDataBuilder;
 import com.kuna_backend.dtos.cart.AddToCartDto;
 import com.kuna_backend.dtos.cart.CartDto;
-import com.kuna_backend.dtos.cart.CartItemDto;
 import com.kuna_backend.exceptions.CartItemNotExistException;
 import com.kuna_backend.models.Cart;
 import com.kuna_backend.models.Client;
-import com.kuna_backend.models.Product;
 import com.kuna_backend.models.ProductVariation;
 import com.kuna_backend.repositories.CartRepository;
 import com.kuna_backend.services.CartService;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -39,81 +34,41 @@ public class CartServiceTest {
     @InjectMocks
     private CartService cartService;
 
-    @BeforeEach
-    public void setUp() {
-        MockitoAnnotations.openMocks(this);
-    }
-
     @Test
-    public void addToCart() {
+    public void addItemToCart() {
 
         AddToCartDto addToCartDto = new AddToCartDto();
         ProductVariation productVariation = new ProductVariation();
         Client client = new Client();
+        Cart expectedCart = new Cart(productVariation, addToCartDto.getQuantity(), client);
 
-        Cart cart = new Cart(productVariation, addToCartDto.getQuantity(), client);
-
-        when(cartRepository.save(any(Cart.class))).thenReturn(cart);
+        when(cartRepository.save(any(Cart.class))).thenReturn(expectedCart);
 
         cartService.addToCart(addToCartDto, productVariation, client);
 
-        assertEquals(productVariation, cart.getProductVariation());
-        assertEquals(addToCartDto.getQuantity(), cart.getQuantity());
-        assertEquals(client, cart.getClient());
+        assertEquals(productVariation, expectedCart.getProductVariation());
+        assertEquals(addToCartDto.getQuantity(), expectedCart.getQuantity());
+        assertEquals(client, expectedCart.getClient());
     }
 
     @Test
     public void listCartItems() {
 
         Client client = new Client();
-
-        Product product1 = new Product();
-        product1.setPrice(10.0);
-
-        Product product2 = new Product();
-        product2.setPrice(20.0);
-
-        ProductVariation productVariation1 = new ProductVariation();
-        productVariation1.setProduct(product1);
-
-        ProductVariation productVariation2 = new ProductVariation();
-        productVariation2.setProduct(product2);
-
-        Cart cart1 = new Cart();
-        cart1.setProductVariation(productVariation1);
-        cart1.setQuantity(2);
-
-        Cart cart2 = new Cart();
-        cart2.setProductVariation(productVariation2);
-        cart2.setQuantity(1);
-
-        List<Cart> cartList = new ArrayList<>();
-        cartList.add(cart1);
-        cartList.add(cart2);
+        List<Cart> cartList = CartTestDataBuilder.createSampleCartItems(client);
 
         when(cartRepository.findAllByClientOrderByCreatedAtDesc(client)).thenReturn(cartList);
 
-        CartItemDto cartItemDto1 = new CartItemDto();
-        cartItemDto1.setProduct(cart1.getProductVariation().getProduct());
-        cartItemDto1.setProductVariation(cart1.getProductVariation());
-        cartItemDto1.setQuantity(cart1.getQuantity());
-
-        CartItemDto cartItemDto2 = new CartItemDto();
-        cartItemDto2.setProduct(cart2.getProductVariation().getProduct());
-        cartItemDto2.setProductVariation(cart2.getProductVariation());
-        cartItemDto2.setQuantity(cart2.getQuantity());
-
-        // Perform the test
         CartDto cartDto = cartService.listCartItems(client);
 
-        Assertions.assertEquals(2, cartDto.getCartItems().size());
-        Assertions.assertEquals(2, cartDto.getCartItems().get(0).getQuantity());
-        Assertions.assertEquals(1, cartDto.getCartItems().get(1).getQuantity());
-        Assertions.assertEquals(40.0, cartDto.getTotalCost(), 0.0001);
+        assertEquals(2, cartDto.getCartItems().size());
+        assertEquals(2, cartDto.getCartItems().get(0).getQuantity());
+        assertEquals(1, cartDto.getCartItems().get(1).getQuantity());
+        assertEquals(40.0, cartDto.getTotalCost(), 0.0001);
     }
 
     @Test
-    public void deleteCartItemIfExist() throws CartItemNotExistException {
+    public void deleteCartItem_WhenExists_ShouldDeleteCartItem() throws CartItemNotExistException {
 
         Long id = 1L;
         when(cartRepository.existsById(id)).thenReturn(true);
@@ -124,7 +79,7 @@ public class CartServiceTest {
     }
 
     @Test
-    public void deleteCartItemIfNotExist() {
+    public void deleteCartItem_WhenNotExists_ShouldThrowCartItemNotExistException() {
 
         Long id = 1L;
         when(cartRepository.existsById(id)).thenReturn(false);
@@ -135,7 +90,7 @@ public class CartServiceTest {
     }
 
     @Test
-    public void deleteCartItems() {
+    public void deleteAllCartItems() {
 
         cartService.deleteCartItems(123L);
 
@@ -143,7 +98,7 @@ public class CartServiceTest {
     }
 
     @Test
-    public void deleteClientCartItems() {
+    public void deleteAllCartItemsForClient() {
 
         Client client = new Client();
 
@@ -151,5 +106,4 @@ public class CartServiceTest {
 
         verify(cartRepository, times(1)).deleteByClient(client);
     }
-
 }

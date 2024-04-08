@@ -32,13 +32,13 @@ public class OrderService {
     private ShippingDetailService shippingDetailService;
 
     @Autowired
-    OrderRepository orderRepository;
+    private OrderRepository orderRepository;
 
     @Autowired
-    OrderItemsRepository orderItemsRepository;
+    private OrderItemsRepository orderItemsRepository;
 
     @Autowired
-    ProductVariationRepository productVariationRepository;
+    private ProductVariationRepository productVariationRepository;
 
     public void placeOrder (Client client, Payment payment, ShippingDetail shippingDetail) {
 
