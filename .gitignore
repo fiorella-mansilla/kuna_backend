@@ -37,3 +37,9 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Docker ###
+docker-compose.yml
+
+### Credentials ###
+src/main/resources/application.properties
