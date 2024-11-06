@@ -1,6 +1,6 @@
 # Kuna Backend
 
-This is a backend e-commerce application developed with Java and Spring Boot. It provides a foundation for building an e-commerce platform with features such as data storage, Rest API endpoints, database migrations, and integration with payment gateways such as Stripe.
+Kuna is an e-commerce web application developed using Java and Spring Boot. The backend architecture provides a foundation for features such as SQL database storage, REST API endpoints, database containerization with Docker, and integration with payment gateways such as Stripe.
 
 ## Setup
 
@@ -22,13 +22,13 @@ To set up and run the application, follow the instructions below:
 
     ```shell
    cd kuna_backend
-   
+
 3. Build the project using Gradle:
 
     ```shell
     ./gradlew build
 
-4. If you're running MySQL in a Docker container, create a docker-compose.yml file in the project directory with the following contents: 
+4. If you're running MySQL in a Docker container, create a `docker-compose.yml` file in the project directory with the following contents: 
 
    ```yaml
    version: '3.1'
@@ -49,18 +49,17 @@ To set up and run the application, follow the instructions below:
          - ./docker/mysql_volume:/var/lib/mysql 
    ```
    
-   This configuration sets up a MySQL container with the necessary environment variables and exposes port 3306 <br />
-
+   This configuration sets up a MySQL container with the necessary environment variables and exposes port 3306.
 
 5. Start the MySQL container using Docker Compose:
 
    ```shell
    docker-compose up -d
 
-6. Use the test data from 'data.sql' file for the application.<br />
+6. Use the test data from the `data.sql` file for the application.<br />
 
 
-7. Configure the database connection by modifying the flyway block in the build.gradle file:
+7. Configure the database connection by modifying the Flyway block in the `build.gradle` file:
 
    ```groovy
    flyway {
@@ -70,9 +69,6 @@ To set up and run the application, follow the instructions below:
     schemas = ['kuna_db']
    }
    ```
-   
-   Replace your_database_name, your_username, and your_password with your actual database details.<br />
-
 
 8. Migrate the database schema using Flyway:
 
@@ -83,12 +79,12 @@ To set up and run the application, follow the instructions below:
 
    ```shell
    ./gradlew bootRun
-<br />
-10. The application will start running on `http://localhost:8080`.
+
+10. The application will start running on `http://localhost:8080`
 
 ## Application Properties
 
-The application requires the configuration specified in the application.properties file. Make sure to update the values of the properties to match your specific configuration.
+The application requires the configuration specified in the `application.properties` file. Make sure to update the values of the properties to match your specific configuration.
 
 ## Dependencies
 
@@ -106,29 +102,16 @@ The application uses the following libraries and frameworks:
 - Mockito Core: 5.2.0
 - MySQL Connector/J: 8.0.32
 
-## Project Structure
-
-The project follows a standard Maven project structure with the following main directories:
-
-* src/main/java: Contains the Java source code of the application.
-* src/main/resources: Contains configuration files and database files.
-* src/test/java: Contains the unit tests for the application.
-
 ## Testing
 
-To run the unit tests, use the following command:
+The tests are implemented using JUnit and Mockito. To run the unit tests, use the following command :
 
    ```shell
    ./gradlew test
 ```
 
-The tests are implemented using JUnit 4.11 and Mockito 5.2.
-
 ## License
 
 This project is licensed under the MIT License.
 
-```
-You can save this content in a `README.md` file in your project directory.
-```
 
